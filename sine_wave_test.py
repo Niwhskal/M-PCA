@@ -22,7 +22,7 @@ y_noise = y+noise
 #plt.show()
 
 
-# cluster
+#clustering
 
 y_fit = np.array(y_noise).reshape(-1,1) 
 clustering = DBSCAN(eps = 1e-02, min_samples=1).fit(y_fit)
