@@ -43,12 +43,54 @@ y_noise = y+noise
 
 #clustering
 
-y_fit = np.array(y_noise).reshape(-1,1) 
-clustering = DBSCAN(eps = 1e-02, min_samples=1).fit(y_fit)
+y_fit = np.array(y_noise).reshape(-1,1)
+
+if args.clus == 'db': 
+
+	clustering = DBSCAN(eps = 1e-02, min_samples=30).fit(y_fit)
+
+elif args.clus == 'hdb':
+	clustering = hdbscan.HDBSCAN(min_cluster_size=100, min_samples = 1).fit(y_fit)
+
+elif args.clus == 'db-hdb':
+	clustering = hdbscan.HDBSCAN(min_cluster_size=30, min_samples = 1, cluster_selection_epsilon = 1e-02).fit(y_fit)
+
+elif args.clus == 'kmeans':
+	clustering = KMeans(n_clusters = 5).fit(y_fit)
 
 
-cluster_colors = [sns.desaturate(palette[col], sat) if col >= 0 else (0.5, 0.5, 0.5) for col, sat in zip(clustering.labels_, clustering.probabilities_)]
+#algorithms
 
+#mpca
 
-plt.scatter(y_fit[0], y_fit[1], c=clustering_colors, **plot_kwds)
+zipped = list(zip(x, zip(y_fit, clustering.labels_)))
+grouped = sorted(zipped, key=lambda zipped : zipped[1][1])
+		
+for name in list(set(clustering.labels_)):
+	
+	if (name == -1):
+		continue
+	else:
+		blob = [(i,y_fit[i]) for n, i in enumerate(clustering.labels_) if n == name]
+		d = dict(blob)
+		blob_train = np.array(list(d.values())).reshape(-1,1)
+		pca = PCA(n_components =0.93)
+		blob_trfmd = pca.fit_transform(blob_train)
+		blob_inv = pca.inverse_transform(blob_trfmd)	
+		plt.scatter(list(d.keys()), blob_inv, s=1, c=name/len(set(clustering.labels_)))
+		
+plt.show()
+
 print(set(clustering.labels_))
+#spca
+"""
+spca = PCA(n_components = 0.93).fit_transform(y_fit)
+
+y_inv = spca.inverse_transform(y_fit)
+
+
+
+colors = [(col+1)/len(set(clustering.labels_)) if col>=0 else 0 for col in clustering.labels_] 
+
+plt.scatter(x, y_fit[:,0], s=1, c=colors)
+plt.show() """
