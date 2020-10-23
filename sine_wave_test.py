@@ -19,7 +19,12 @@ parser.add_argument('-c', '--clus', default = 'hdb', choices= ['hdb', 'db','db-h
 
 parser.add_argument('-a', '--alg', default='SPCA', choices=['kPCA', 'AE', 'Arima'])
 
+parser.add_argument('-l', '--arglist',default=[1e-02, 50, 100, 4], nargs = 4)
+
 args = parser.parse_args()
+
+tw = tuple(args.arglist)
+epsilon, min_samp, min_csize, cents = args.arglist
 
 #wave data
 freq = 8e03
@@ -37,9 +42,6 @@ else:
 noise = np.random.normal(0,0.12,8000)
 y_noise = y+noise
 
-#plt.scatter(x,y_noise, s=1)
-#plt.show()
-
 
 #clustering
 
@@ -47,50 +49,42 @@ y_fit = np.array(y_noise).reshape(-1,1)
 
 if args.clus == 'db': 
 
-	clustering = DBSCAN(eps = 1e-02, min_samples=30).fit(y_fit)
+	clustering = DBSCAN(eps = epsilon, min_samples=min_samp).fit(y_fit)
 
 elif args.clus == 'hdb':
-	clustering = hdbscan.HDBSCAN(min_cluster_size=100, min_samples = 1).fit(y_fit)
+	clustering = hdbscan.HDBSCAN(min_cluster_size=min_csize, min_samples= min_samp).fit(y_fit)
 
 elif args.clus == 'db-hdb':
-	clustering = hdbscan.HDBSCAN(min_cluster_size=30, min_samples = 1, cluster_selection_epsilon = 1e-02).fit(y_fit)
+	clustering = hdbscan.HDBSCAN(min_cluster_size=min_csize, min_samples = min_samp, cluster_selection_epsilon = epsilon).fit(y_fit)
 
 elif args.clus == 'kmeans':
-	clustering = KMeans(n_clusters = 5).fit(y_fit)
+	clustering = KMeans(n_clusters = cents).fit(y_fit)
 
 
 #algorithms
 
-#mpca
+fig, ax = plt.subplots()
 
-zipped = list(zip(x, zip(y_fit, clustering.labels_)))
-grouped = sorted(zipped, key=lambda zipped : zipped[1][1])
-		
+#mpca
+err = []	
 for name in list(set(clustering.labels_)):
 	
 	if (name == -1):
 		continue
 	else:
-		blob = [(i,y_fit[i]) for n, i in enumerate(clustering.labels_) if n == name]
-		d = dict(blob)
-		blob_train = np.array(list(d.values())).reshape(-1,1)
+		blob = [y_fit[i] for i, n in enumerate(clustering.labels_) if n == name]
+		keys = [j for j, m in enumerate(clustering.labels_) if m ==name]
+		blob_train = np.array(blob).reshape(-1,1)
 		pca = PCA(n_components =0.93)
 		blob_trfmd = pca.fit_transform(blob_train)
 		blob_inv = pca.inverse_transform(blob_trfmd)	
-		plt.scatter(list(d.keys()), blob_inv, s=1, c=name/len(set(clustering.labels_)))
+		err.append(1/len(blob_inv) * np.sum(np.sqrt(blob_train, blob_inv)))
+		ax.scatter(keys, blob_inv, s=1, label = name)
 		
+print('Error = {}'.format(1/len(err) * sum(err)))
+ax.legend()
 plt.show()
 
 print(set(clustering.labels_))
 #spca
-"""
-spca = PCA(n_components = 0.93).fit_transform(y_fit)
 
-y_inv = spca.inverse_transform(y_fit)
-
-
-
-colors = [(col+1)/len(set(clustering.labels_)) if col>=0 else 0 for col in clustering.labels_] 
-
-plt.scatter(x, y_fit[:,0], s=1, c=colors)
-plt.show() """
