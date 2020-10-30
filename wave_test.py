@@ -31,11 +31,9 @@ args = parser.parse_args()
 tw = tuple(args.arglist)
 epsilon, min_samp, min_csize, cents = args.arglist
 np.random.seed(19234)
-fig, ax = plt.subplots(3)
 #wave data
-freq = 8e03
+freq = sample_freq= 8e03
 cycles = 10
-sample_freq = 8e03
 
 x = np.arange(sample_freq)
 
@@ -49,10 +47,13 @@ else:
 	nse1 = np.random.randn(len(x))
 	y = np.sin(2*np.pi*cycles*x) +nse1 
 
-noise = np.random.normal(0,0.12,8000)
+noise = np.random.normal(0,0.12,len(x))
 y_noise = y+noise+10
-
-ax[0].scatter(x, y_noise,s =1)
+plt.subplot(3,1,1)
+plt.scatter(x, y_noise,s =1)
+plt.xlabel('time')
+plt.ylabel('amplitude')
+plt.title('Input data')
 #plt.show()
 
 
@@ -60,6 +61,7 @@ ax[0].scatter(x, y_noise,s =1)
 
 y_fit = np.array(y_noise).reshape(-1,1)
 
+mpca_time = time.time()
 if args.clus == 'db': 
 
 	clustering = DBSCAN(eps = epsilon, min_samples=min_samp).fit(y_fit)
@@ -90,24 +92,34 @@ for name in list(set(clustering.labels_)):
 		blob_trfmd = pca.fit_transform(blob_train)
 		blob_inv = pca.inverse_transform(blob_trfmd)	
 		err.append(1/len(blob_inv) * np.sum(np.sqrt(blob_train, blob_inv)))
-		ax[1].scatter(keys, blob_inv, s=1, label = name)
-		
-print('multi pca Error = {}'.format(sum(err)))
-ax[1].legend()
+		plt.subplot(3,1,2)
+		plt.scatter(keys, blob_inv, s=1, label = name)
+	
+mtime= time.time() - mpca_time	
+#ax[1].legend()
+plt.xlabel('time')
+plt.ylabel('amplitude')
+plt.title('Mpca | Time: {0:.3g} s | l2: {1:.3g}'.format(mtime, sum(err)))
 
 #kpca
 
+kertime = time.time()
 if args.alg == 'kPCA':
 	kpca = KernelPCA(n_components=None, kernel='rbf', fit_inverse_transform=True)
 	trfmd_alg = kpca.fit_transform(y_fit)	
 	inv_alg = kpca.inverse_transform(trfmd_alg)
-	ax[2].scatter(x, inv_alg, s=1)
+	ktime = time.time() - kertime	
+	plt.subplot(3,1,3)
+	plt.scatter(x, inv_alg, s=1)
+	plt.xlabel('time')
+	plt.ylabel('amplitude')	
 	kerr =1/len(inv_alg) * np.sum(np.sqrt(y_fit, inv_alg))		
-	print('kernel pca error = {}'.format(kerr))
+	plt.title('kpca | Time: {0:.3g} s | l2: {1:.3g}'.format(ktime, kerr))
 
 #autoencoder
 
-if args.alg=='AE':
+elif args.alg=='AE': 
+	autotime = time.time()
 	ip = torch.tensor(y_fit, requires_grad =True, dtype=torch.float)
 	class autoencoder(nn.Module):
 		
@@ -132,9 +144,15 @@ if args.alg=='AE':
 		loss.backward()
 		optim.step()
 		t_loss += loss
-	ax[2].scatter(x, preds.detach().numpy(), s=1)
-	print("Autoencoder error = {}".format(t_loss.item()))
-
+	atime = time.time() - autotime
+	ae_err =1/len(preds.detach().numpy()) * np.sum(np.sqrt(y_fit, preds.detach().numpy()))		
+	plt.subplot(3,1,3)
+	plt.scatter(x, preds.detach().numpy(), s=1)
+	plt.xlabel('time')
+	plt.ylabel('amplitude')
+	plt.title('autoencoder | Time: {0:.3g} s | l2: {1:.3g}'.format(atime, ae_err))
+		
+plt.tight_layout()
 plt.show()
 
 print(set(clustering.labels_))
