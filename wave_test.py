@@ -82,24 +82,25 @@ elif args.clus == 'kmeans':
 err = []	
 for name in list(set(clustering.labels_)):
 	
-	if (name == -1):
-		continue
-	else:
-		blob = [y_fit[i] for i, n in enumerate(clustering.labels_) if n == name]
-		keys = [j for j, m in enumerate(clustering.labels_) if m ==name]
-		blob_train = np.array(blob).reshape(-1,1)
-		pca = PCA(n_components =0.9)
-		blob_trfmd = pca.fit_transform(blob_train)
-		blob_inv = pca.inverse_transform(blob_trfmd)	
-		err.append(1/len(blob_inv) * np.sum(np.sqrt(blob_train, blob_inv)))
-		plt.subplot(3,1,2)
-		plt.scatter(keys, blob_inv, s=1, label = name)
-	
+	#if (name == -1):
+		#continue
+		#pass
+	#else:
+	blob = [y_fit[i] for i, n in enumerate(clustering.labels_) if n == name]
+	keys = [j for j, m in enumerate(clustering.labels_) if m ==name]
+	blob_train = np.array(blob).reshape(-1,1)
+	pca = PCA(n_components =0.9)
+	blob_trfmd = pca.fit_transform(blob_train)
+	blob_inv = pca.inverse_transform(blob_trfmd)	
+	err.append(1/len(blob_inv) * np.sum(np.sqrt(blob_train, blob_inv)))
+	plt.subplot(3,1,2)
+	plt.scatter(keys, blob_inv, s=1, label = name)
+
 mtime= time.time() - mpca_time	
 #ax[1].legend()
 plt.xlabel('time')
 plt.ylabel('amplitude')
-plt.title('Mpca | Time: {0:.3g} s | l2: {1:.3g}'.format(mtime, sum(err)))
+plt.title('Mpca | Time: {0:.3g} s | l2: {1:.3g}'.format(mtime, sum(err)/len(err)))
 
 #kpca
 
