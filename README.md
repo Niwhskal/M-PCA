@@ -41,5 +41,5 @@ The time-series data used for demonstration is a noisy cosine wave. The multi-pc
 
 ---
 
-###### The multi-pca exhibits modelling capabilities on par with kernel pca and the autoencoder  while being significantly faster. This disparity only grows with the size of the dataset. 
+###### The multi-pca exhibits modelling capabilities on par with kernel pca and the autoencoder  while being significantly faster. This advantage only grows with the size of the dataset. 
 
