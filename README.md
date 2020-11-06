@@ -33,6 +33,7 @@ The time-series data used for demonstration is a noisy cosine wave. The multi-pc
 
 ![](images/AE.png)
 
+---
 
 #### Versus Kernel pca (linear kernel)
 
